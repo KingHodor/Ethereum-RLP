@@ -22,7 +22,7 @@ int wallet_copy_rpl(uint8_t *source, uint8_t *destination, uint8_t size,
     return ret_val;
 }
 
-int wallet_encode_list(EthereumSignTx *new_msg, EthereumSig *new_tx,
+int wallet_encode_list(EncodeEthereumSignTx *new_msg, EncodeEthereumTxRequest *new_tx,
                        uint64_t *rawTx) {
     uint32_t totalLength = 0;
     uint8_t *data;
@@ -88,42 +88,73 @@ int wallet_encode_list(EthereumSignTx *new_msg, EthereumSig *new_tx,
 }
 
 void wallet_encode_element(pb_byte_t *bytes, pb_size_t size,
-                           pb_byte_t *new_bytes, pb_size_t *new_size) {
-    if (size == 0) {
+                           pb_byte_t *new_bytes, pb_size_t *new_size, bool remove_leading_zeros) {
+
+    pb_byte_t *pbytes;
+    pb_size_t psize;
+
+
+    if (remove_leading_zeros) {
+        int leading_count = 0;
+        for (int j = 0; j < size; ++j) {
+            pb_byte_t singleByte = bytes[j];
+            if ((singleByte | 0x00) == 0) {
+                leading_count = leading_count + 1;
+            } else {
+                break;
+            }
+        }
+        if (leading_count > 0) {
+            pbytes = malloc(size - leading_count);
+            memcpy(pbytes, bytes + 1, (size - leading_count));
+            psize = (pb_size_t) (size - leading_count);
+        }else{
+            pbytes = malloc(size);
+            memcpy(pbytes, bytes, (size));
+            psize = size;
+        }
+    }else{
+        pbytes = malloc(size);
+        memcpy(pbytes, bytes, (size));
+        psize = size;
+    }
+
+    if (psize == 0) {
         *new_size = 1;
         new_bytes[0] = (pb_byte_t) OFFSET_SHORT_ITEM;
-    } else if (size == 1 && bytes[0] == 0x00) {
+    } else if (psize == 1 && pbytes[0] == 0x00) {
         *new_size = 1;
-        new_bytes[0] = bytes[0];
-    } else if (size == 1 && ((bytes[0] & 0xFF) == 0)) {
+        new_bytes[0] = pbytes[0];
+    } else if (psize == 1 && ((pbytes[0] & 0xFF) == 0)) {
         *new_size = 1;
-        new_bytes[0] = bytes[0];
-    } else if (size == 1 && (bytes[0] & 0xFF) < 0x80) {
+        new_bytes[0] = pbytes[0];
+    } else if (psize == 1 && (pbytes[0] & 0xFF) < 0x80) {
         *new_size = 1;
-        new_bytes[0] = bytes[0];
-    } else if (size < SIZE_THRESHOLD) {
-        pb_byte_t length = (pb_byte_t) (OFFSET_SHORT_ITEM + size);
+        new_bytes[0] = pbytes[0];
+    } else if (psize < SIZE_THRESHOLD) {
+        pb_byte_t length = (pb_byte_t) (OFFSET_SHORT_ITEM + psize);
         new_bytes[0] = length;
-        memcpy(new_bytes + 1, bytes, size);
-        *new_size = size + 1;
+        memcpy(new_bytes + 1, pbytes, psize);
+        *new_size = psize + 1;
     } else {
-        int tmpLength = size;
+        int tmpLength = psize;
         pb_byte_t lengthOfLength = (pb_byte_t) 0;
         while (tmpLength != 0) {
             ++lengthOfLength;
             tmpLength = tmpLength >> 8;
         }
-        pb_byte_t *data = malloc(1 + lengthOfLength + size);
+        pb_byte_t *data = malloc(1 + lengthOfLength + psize);
         data[0] = (pb_byte_t) (OFFSET_LONG_ITEM + lengthOfLength);
-        tmpLength = size;
+        tmpLength = psize;
         int i;
         for (int i = lengthOfLength; i > 0; --i) {
             data[i] = (pb_byte_t) (tmpLength & 0xFF);
             tmpLength = tmpLength >> 8;
         }
-        memcpy(data + 1 + lengthOfLength, bytes, size);
-        memcpy(new_bytes, data, ((1 + lengthOfLength + size)));
-        *new_size = (1 + lengthOfLength + size);
+        memcpy(data + 1 + lengthOfLength, pbytes, psize);
+        memcpy(new_bytes, data, ((1 + lengthOfLength + psize)));
+        *new_size = (1 + lengthOfLength + psize);
+        free(pbytes);
         free(data);
     }
 }
@@ -169,5 +200,6 @@ void wallet_encode_int(uint32_t singleInt, pb_byte_t *new_bytes) {
     }
 
 }
+
 
 

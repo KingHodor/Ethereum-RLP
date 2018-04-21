@@ -8,30 +8,30 @@
 #include "RLP.h"
 
 int wallet_ethereum_assemble_tx(EthereumSignTx *msg, EthereumSig *tx, uint64_t *rawTx) {
-    EthereumSignTx new_msg;
-    EthereumSig new_tx;
+    EncodeEthereumSignTx new_msg;
+    EncodeEthereumTxRequest new_tx;
     memset(&new_msg, 0, sizeof(new_msg));
     memset(&new_tx, 0, sizeof(new_tx));
 
     wallet_encode_element(msg->nonce.bytes, msg->nonce.size,
-                          new_msg.nonce.bytes, &(new_msg.nonce.size));
+                          new_msg.nonce.bytes, &(new_msg.nonce.size), false);
     wallet_encode_element(msg->gas_price.bytes, msg->gas_price.size,
-                          new_msg.gas_price.bytes, &(new_msg.gas_price.size));
+                          new_msg.gas_price.bytes, &(new_msg.gas_price.size), false);
     wallet_encode_element(msg->gas_limit.bytes, msg->gas_limit.size,
-                          new_msg.gas_limit.bytes, &(new_msg.gas_limit.size));
+                          new_msg.gas_limit.bytes, &(new_msg.gas_limit.size), false);
     wallet_encode_element(msg->to.bytes, msg->to.size, new_msg.to.bytes,
-                          &(new_msg.to.size));
+                          &(new_msg.to.size), false);
     wallet_encode_element(msg->value.bytes, msg->value.size,
-                          new_msg.value.bytes, &(new_msg.value.size));
+                          new_msg.value.bytes, &(new_msg.value.size), false);
     wallet_encode_element(msg->data_initial_chunk.bytes,
                           msg->data_initial_chunk.size, new_msg.data_initial_chunk.bytes,
-                          &(new_msg.data_initial_chunk.size));
+                          &(new_msg.data_initial_chunk.size), false);
 
     wallet_encode_int(tx->signature_v, &(new_tx.signature_v));
     wallet_encode_element(tx->signature_r.bytes, tx->signature_r.size,
-                          new_tx.signature_r.bytes, &(new_tx.signature_r.size));
+                          new_tx.signature_r.bytes, &(new_tx.signature_r.size), true);
     wallet_encode_element(tx->signature_s.bytes, tx->signature_s.size,
-                          new_tx.signature_s.bytes, &(new_tx.signature_s.size));
+                          new_tx.signature_s.bytes, &(new_tx.signature_s.size), true);
 
     int length = wallet_encode_list(&new_msg, &new_tx, rawTx);
     return length;
