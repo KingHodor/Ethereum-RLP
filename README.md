@@ -91,4 +91,4 @@ raw transaction: f86c008504a817c80082520894e0defb92145fef3c3a945637705fafd3aa74a
 
 ## Getting help
 
-Please contact ahmet@evercoin.com
+Please contact sfa.alptekin@gmail.com
