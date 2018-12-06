@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, Evercoin. All Rights Reserved.
+ * Copyright (c) 2016-2018 . All Rights Reserved.
  */
 
 #ifndef RLP_UTİLS_H
